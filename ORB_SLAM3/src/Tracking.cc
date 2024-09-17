@@ -558,7 +558,7 @@ void Tracking::newParameterLoader(Settings *settings) {
     mK_(0,2) = mpCamera->getParameter(2);
     mK_(1,2) = mpCamera->getParameter(3);
 
-    if((mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD) &&
+    if((mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD || mSensor==System::LIDAR_STEREO) &&
         settings->cameraType() == Settings::KannalaBrandt){
         mpCamera2 = settings->camera2();
         mpCamera2 = mpAtlas->AddCamera(mpCamera2);
@@ -568,7 +568,7 @@ void Tracking::newParameterLoader(Settings *settings) {
         mpFrameDrawer->both = true;
     }
 
-    if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD ){
+    if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD || mSensor==System::LIDAR_STEREO){
         mbf = settings->bf();
         mThDepth = settings->b() * settings->thDepth();
     }
@@ -594,7 +594,7 @@ void Tracking::newParameterLoader(Settings *settings) {
 
     mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
-    if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
+    if(mSensor==System::STEREO || mSensor==System::IMU_STEREO || || mSensor==System::LIDAR_STEREO)
         mpORBextractorRight = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
     if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
@@ -917,7 +917,7 @@ bool Tracking::ParseCamParamFile(cv::FileStorage &fSettings)
             mK_(1,2) = cy;
         }
 
-        if(mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD){
+        if(mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD || mSensor==System::LIDAR_STEREO){
             // Right camera
             // Camera calibration parameters
             cv::FileNode node = fSettings["Camera2.fx"];
@@ -1130,7 +1130,7 @@ bool Tracking::ParseCamParamFile(cv::FileStorage &fSettings)
         std::cerr << "Check an example configuration file with the desired sensor" << std::endl;
     }
 
-    if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD )
+    if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD || mSensor==System::LIDAR_STEREO)
     {
         cv::FileNode node = fSettings["Camera.bf"];
         if(!node.empty() && node.isReal())
@@ -1168,7 +1168,7 @@ bool Tracking::ParseCamParamFile(cv::FileStorage &fSettings)
     else
         cout << "- color order: BGR (ignored if grayscale)" << endl;
 
-    if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD)
+    if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD || mSensor==System::LIDAR_STEREO)
     {
         float fx = mpCamera->getParameter(0);
         cv::FileNode node = fSettings["ThDepth"];
@@ -1282,7 +1282,7 @@ bool Tracking::ParseORBParamFile(cv::FileStorage &fSettings)
 
     mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
-    if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
+    if(mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::LIDAR_STEREO)
         mpORBextractorRight = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
     if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
@@ -1498,6 +1498,73 @@ Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat 
         mCurrentFrame = Frame(mImGray,imGrayRight,timestamp,mpORBextractorLeft,mpORBextractorRight,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpCamera,&mLastFrame,*mpImuCalib);
     else if(mSensor == System::IMU_STEREO && mpCamera2)
         mCurrentFrame = Frame(mImGray,imGrayRight,timestamp,mpORBextractorLeft,mpORBextractorRight,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpCamera,mpCamera2,mTlr,&mLastFrame,*mpImuCalib);
+
+    //cout << "Incoming frame ended" << endl;
+
+    mCurrentFrame.mNameFile = filename;
+    mCurrentFrame.mnDataset = mnNumDataset;
+
+#ifdef REGISTER_TIMES
+    vdORBExtract_ms.push_back(mCurrentFrame.mTimeORB_Ext);
+    vdStereoMatch_ms.push_back(mCurrentFrame.mTimeStereoMatch);
+#endif
+
+    //cout << "Tracking start" << endl;
+    Track();
+    //cout << "Tracking end" << endl;
+
+    return mCurrentFrame.GetPose();
+}
+
+Sophus::SE3f Tracking::GrabImageLidarStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, std::unordered_map<cv:Point2d, float> &lidarDepth, const double &timestamp, string filename)
+{
+    //cout << "GrabImageStereo" << endl;
+
+    mImGray = imRectLeft;
+    cv::Mat imGrayRight = imRectRight;
+    mImRight = imRectRight;
+
+    if(mImGray.channels()==3)
+    {
+        //cout << "Image with 3 channels" << endl;
+        if(mbRGB)
+        {
+            cvtColor(mImGray,mImGray,cv::COLOR_RGB2GRAY);
+            cvtColor(imGrayRight,imGrayRight,cv::COLOR_RGB2GRAY);
+        }
+        else
+        {
+            cvtColor(mImGray,mImGray,cv::COLOR_BGR2GRAY);
+            cvtColor(imGrayRight,imGrayRight,cv::COLOR_BGR2GRAY);
+        }
+    }
+    else if(mImGray.channels()==4)
+    {
+        //cout << "Image with 4 channels" << endl;
+        if(mbRGB)
+        {
+            cvtColor(mImGray,mImGray,cv::COLOR_RGBA2GRAY);
+            cvtColor(imGrayRight,imGrayRight,cv::COLOR_RGBA2GRAY);
+        }
+        else
+        {
+            cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
+            cvtColor(imGrayRight,imGrayRight,cv::COLOR_BGRA2GRAY);
+        }
+    }
+
+    //cout << "Incoming frame creation" << endl;
+
+    if ((mSensor == System::STEREO || mSensor == System::LIDAR_STEREO) && !mpCamera2)
+        mCurrentFrame = Frame(mImGray,imGrayRight,timestamp,mpORBextractorLeft,mpORBextractorRight,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpCamera);
+    else if((mSensor == System::STEREO || mSensor == System::LIDAR_STEREO) && mpCamera2)
+        mCurrentFrame = Frame(mImGray,imGrayRight,timestamp,mpORBextractorLeft,mpORBextractorRight,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpCamera,mpCamera2,mTlr);
+    
+    // TODO in case someone want to add IMU LIDAR STEREO integration, add these.
+    // else if((mSensor == System::IMU_STEREO || mSensor == System::LIDAR_STEREO) && !mpCamera2)
+    //     mCurrentFrame = Frame(mImGray,imGrayRight,timestamp,mpORBextractorLeft,mpORBextractorRight,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpCamera,&mLastFrame,*mpImuCalib);
+    // else if((mSensor == System::IMU_STEREO || mSensor == System::LIDAR_STEREO) && mpCamera2)
+    //     mCurrentFrame = Frame(mImGray,imGrayRight,timestamp,mpORBextractorLeft,mpORBextractorRight,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpCamera,mpCamera2,mTlr,&mLastFrame,*mpImuCalib);
 
     //cout << "Incoming frame ended" << endl;
 
@@ -1898,7 +1965,7 @@ void Tracking::Track()
 
     if(mState==NOT_INITIALIZED)
     {
-        if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD)
+        if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD || mSensor==System::LIDAR_STEREO)
         {
             StereoInitialization();
         }
@@ -2878,7 +2945,7 @@ bool Tracking::TrackWithMotionModel()
     // Project points seen in previous frame
     int th;
 
-    if(mSensor==System::STEREO)
+    if(mSensor==System::STEREO || mSensor==System::LIDAR_STEREO)
         th=7;
     else
         th=15;
@@ -3019,7 +3086,7 @@ bool Tracking::TrackLocalMap()
                 else
                     mnMatchesInliers++;
             }
-            else if(mSensor==System::STEREO)
+            else if(mSensor==System::STEREO || mSensor==System::LIDAR_STEREO)
                 mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
         }
     }

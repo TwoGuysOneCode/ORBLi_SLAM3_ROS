@@ -61,6 +61,9 @@ public:
     // Constructor for stereo cameras.
     Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeStamp, ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera,Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
 
+    //Construtor for lidar-stereo setup
+    Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const std::unordered_map<cv:Point2d, float> &ld, const double &timeStamp, ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera,Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib())
+
     // Constructor for RGB-D cameras.
     Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera,Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
 
@@ -114,6 +117,9 @@ public:
     // Search a match for each keypoint in the left image to a keypoint in the right image.
     // If there is a match, depth is computed and the right coordinate associated to the left keypoint is stored.
     void ComputeStereoMatches();
+
+    // Use lidar's depth information to increase orb's depth precision.
+    void DepthLidarAdjustment();
 
     // Associate a "right" coordinate to a keypoint if there is valid depth in the depthmap.
     void ComputeStereoFromRGBD(const cv::Mat &imDepth);
@@ -172,6 +178,8 @@ private:
     Eigen::Matrix<float,3,3> mRcw;
     Eigen::Matrix<float,3,1> mtcw;
     bool mbHasPose;
+
+    std::unordered_map<cv:Point2d, float> lidarDepth;
 
     //Rcw_ not necessary as Sophus has a method for extracting the rotation matrix: Tcw_.rotationMatrix()
     //tcw_ not necessary as Sophus has a method for extracting the translation vector: Tcw_.translation()

@@ -145,7 +145,7 @@ namespace ORB_SLAM3 {
         cout << "\t-Loaded camera 1" << endl;
 
         //Read second camera if stereo (not rectified)
-        if(sensor_ == System::STEREO || sensor_ == System::IMU_STEREO){
+        if(sensor_ == System::STEREO || sensor_ == System::IMU_STEREO || sensor_ == System::LIDAR_STEREO){
             readCamera2(fSettings);
             cout << "\t-Loaded camera 2" << endl;
         }
@@ -259,7 +259,7 @@ namespace ORB_SLAM3 {
             calibration1_ = new KannalaBrandt8(vCalibration);
             originalCalib1_ = new KannalaBrandt8(vCalibration);
 
-            if(sensor_ == System::STEREO || sensor_ == System::IMU_STEREO){
+            if(sensor_ == System::STEREO || sensor_ == System::IMU_STEREO || sensor_ == System::LIDAR_STEREO){
                 int colBegin = readParameter<int>(fSettings,"Camera1.overlappingBegin",found);
                 int colEnd = readParameter<int>(fSettings,"Camera1.overlappingEnd",found);
                 vector<int> vOverlapping = {colBegin, colEnd};
@@ -384,7 +384,7 @@ namespace ORB_SLAM3 {
                 calibration1_->setParameter(calibration1_->getParameter(3) * scaleRowFactor, 3);
 
 
-                if((sensor_ == System::STEREO || sensor_ == System::IMU_STEREO) && cameraType_ != Rectified){
+                if((sensor_ == System::STEREO || sensor_ == System::IMU_STEREO || sensor_ == System::LIDAR_STEREO) && cameraType_ != Rectified){
                     calibration2_->setParameter(calibration2_->getParameter(1) * scaleRowFactor, 1);
                     calibration2_->setParameter(calibration2_->getParameter(3) * scaleRowFactor, 3);
                 }
@@ -402,7 +402,7 @@ namespace ORB_SLAM3 {
                 calibration1_->setParameter(calibration1_->getParameter(0) * scaleColFactor, 0);
                 calibration1_->setParameter(calibration1_->getParameter(2) * scaleColFactor, 2);
 
-                if((sensor_ == System::STEREO || sensor_ == System::IMU_STEREO) && cameraType_ != Rectified){
+                if((sensor_ == System::STEREO || sensor_ == System::IMU_STEREO || sensor_ == System::LIDAR_STEREO) && cameraType_ != Rectified){
                     calibration2_->setParameter(calibration2_->getParameter(0) * scaleColFactor, 0);
                     calibration2_->setParameter(calibration2_->getParameter(2) * scaleColFactor, 2);
 
@@ -475,7 +475,7 @@ namespace ORB_SLAM3 {
         viewPointF_ = readParameter<float>(fSettings,"Viewer.ViewpointF",found);
         imageViewerScale_ = readParameter<float>(fSettings,"Viewer.imageViewScale",found,false);
 
-         if(!found)
+        if(!found)
             imageViewerScale_ = 1.0f;
     }
 
@@ -560,7 +560,7 @@ namespace ORB_SLAM3 {
             output << " ]" << endl;
         }
 
-        if(settings.sensor_ == System::STEREO || settings.sensor_ == System::IMU_STEREO){
+        if(settings.sensor_ == System::STEREO || settings.sensor_ == System::IMU_STEREO || settings.sensor_ == System::LIDAR_STEREO){
             output << "\t-Camera 2 parameters (";
             if(settings.cameraType_ == Settings::PinHole || settings.cameraType_ ==  Settings::Rectified){
                 output << "Pinhole";
@@ -600,7 +600,7 @@ namespace ORB_SLAM3 {
             }
             output << " ]" << endl;
 
-            if((settings.sensor_ == System::STEREO || settings.sensor_ == System::IMU_STEREO) &&
+            if((settings.sensor_ == System::STEREO || settings.sensor_ == System::IMU_STEREO || settings.sensor_ == System::LIDAR_STEREO) &&
                 settings.cameraType_ == Settings::KannalaBrandt){
                 output << "\t-Camera 2 parameters after resize: [ ";
                 for(size_t i = 0; i < settings.calibration2_->size(); i++){
@@ -613,7 +613,7 @@ namespace ORB_SLAM3 {
         output << "\t-Sequence FPS: " << settings.fps_ << endl;
 
         //Stereo stuff
-        if(settings.sensor_ == System::STEREO || settings.sensor_ == System::IMU_STEREO){
+        if(settings.sensor_ == System::STEREO || settings.sensor_ == System::IMU_STEREO || settings.sensor_ == System::LIDAR_STEREO){
             output << "\t-Stereo baseline: " << settings.b_ << endl;
             output << "\t-Stereo depth threshold : " << settings.thDepth_ << endl;
 

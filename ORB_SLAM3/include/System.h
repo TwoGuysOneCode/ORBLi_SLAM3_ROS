@@ -91,6 +91,7 @@ public:
         IMU_MONOCULAR=3,
         IMU_STEREO=4,
         IMU_RGBD=5,
+        LIDAR_STEREO=6,
     };
 
     // File type
@@ -120,6 +121,13 @@ public:
     // Returns the camera pose (empty if tracking fails).
     Sophus::SE3f TrackMonocular(const cv::Mat &im, const double &timestamp, const vector<IMU::Point>& vImuMeas = vector<IMU::Point>(), string filename="");
 
+    /**
+     * @brief Proccess the given stereo frame with lidar depth points. Images must be synchronized. 
+     * Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
+     * The depth map is an hashmap, the key is the position, the value is the depth value respect to left camera frame
+     * @return the camera pose (empty if tracking fails).
+     */
+    Sophus::SE3f System::TrackLidarStereo(const cv::Mat &imLeft, const cv::Mat &imRight, std::unordered_map<cv:Point2d, float> &lidarDepth, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename);
 
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
