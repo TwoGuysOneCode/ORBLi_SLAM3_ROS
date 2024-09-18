@@ -1090,6 +1090,27 @@ void DepthLidarAdjustment()
         const float &v = kp.pt.y;
         const float &u = kp.pt.x;
         //TODO add window control and depth control, add threslhold.
+        int winSize = 3;
+        int winX, winY;
+        for(int iX=0; iX<winSize; iX++)
+        {
+            for(int iY=0; iY<winSize; iY++)
+            {   
+                winY = (v - std::ceil(winSize/2) + iY);
+                if(winY < 0 || winY > imgHeight)
+                    continue;
+
+                winX = (u - std::floor(winSize/2) + iX);
+                if(winX < 0 || winX > igWidth)
+                    continue;
+                
+
+                if(lidarDepth(cv::Point(winX, winY)) != NULL)
+                {
+                    lidarDepth(cv::Point(winX, winY)) //Start use lidarDepth
+                }
+            }
+        }
         const float d = lidarMap(v,u);
     }
 }
