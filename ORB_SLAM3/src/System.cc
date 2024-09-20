@@ -327,7 +327,7 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, 
     return Tcw;
 }
 
-Sophus::SE3f System::TrackLidarStereo(const cv::Mat &imLeft, const cv::Mat &imRight, std::unordered_map<cv:Point2d, float> &lidarDepth, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
+Sophus::SE3f System::TrackLidarStereo(const cv::Mat &imLeft, const cv::Mat &imRight, std::unordered_map<cv::Point2d, float> &lidarDepth, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
 {
     if(mSensor!=LIDAR_STEREO)
     {
