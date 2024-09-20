@@ -1082,6 +1082,10 @@ void Frame::ComputeStereoMatches()
 
 void DepthLidarAdjustment()
 {
+    //if there aren't lidar point return
+    if(lidarDepth.empty()){
+        return;
+    }
     // TODO the coord of the right frame should be the same?
     for(int i=0; i<N; i++)
     {
