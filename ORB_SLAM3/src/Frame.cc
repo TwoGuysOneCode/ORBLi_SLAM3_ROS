@@ -1083,35 +1083,52 @@ void Frame::ComputeStereoMatches()
 void DepthLidarAdjustment()
 {
     // TODO the coord of the right frame should be the same?
-    mvDepth[]
     for(int i=0; i<N; i++)
     {
         const cv::KeyPoint &kp = mvKeys[i];
         const float &v = kp.pt.y;
         const float &u = kp.pt.x;
         //TODO add window control and depth control, add threslhold.
-        int winSize = 3;
+        int winSize = 3;   //This parameter MUST BE ODD, add a check in the constructor
+        float depthTh = 1.0;  //TODO: create a global parameter
         int winX, winY;
+        //TODO: consider a corner filter for the depth
+        int bestPixDist = 0;
+        float bestDepthErr = 10000;
+        float bestDepth = mvDepth[i];
         for(int iX=0; iX<winSize; iX++)
         {
             for(int iY=0; iY<winSize; iY++)
             {   
-                winY = (v - std::ceil(winSize/2) + iY);
-                if(winY < 0 || winY > imgHeight)
+                winY = (v - static_cast<int>(std::floor(winSize/2)) + iY);
+                if(winY < 0 || winY > imgHeight)             //Exceed image limit
                     continue;
 
-                winX = (u - std::floor(winSize/2) + iX);
-                if(winX < 0 || winX > igWidth)
+                winX = (u - static_cast<int>(std::floor(winSize/2)) + iX);
+                if(winX < 0 || winX > igWidth)               //Exceed image limit
                     continue;
-                
 
-                if(lidarDepth(cv::Point(winX, winY)) != NULL)
+                dp = lidarDepth(cv::Point(winX, winY));
+                if(dp != NULL)
                 {
-                    lidarDepth(cv::Point(winX, winY)) //Start use lidarDepth
+                    dp_err = std::abs(mvDepth[i] - dp);
+                    //ORB in windows
+                    if(dp_err < depthTh){
+                        //Possible depth estimation
+                        int pixDist = static_cast<int>(std::floor(std::sqrt(std::pow(winY - v, 2) + std::pow(winX - u, 2)))); //TODO: find a better solution
+                        if(pixDist < bestPixDist){
+                            if(dp_err < bestDepthErr){
+                                bestDepthErr = dp_err;
+                                bestPixDist = pixDist;
+                                bestDepth = dp;
+                            }
+                        }
+                    }
                 }
             }
         }
-        const float d = lidarMap(v,u);
+        mvDepth[i] = bestDepth;
+        //const float d = lidarMap(v,u);
     }
 }
 
