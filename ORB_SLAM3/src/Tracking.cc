@@ -1516,7 +1516,7 @@ Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat 
     return mCurrentFrame.GetPose();
 }
 
-Sophus::SE3f Tracking::GrabImageLidarStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, std::unordered_map<cv::Point2d, float> &lidarDepth, const double &timestamp, string filename)
+Sophus::SE3f Tracking::GrabImageLidarStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, std::unordered_map<std::pair<int, int>, float> &lidarDepth, const double &timestamp, string filename)
 {
     //cout << "GrabImageStereo" << endl;
 
