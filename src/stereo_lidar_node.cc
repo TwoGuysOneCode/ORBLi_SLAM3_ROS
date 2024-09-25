@@ -1,4 +1,4 @@
-#include "stereo_lida_node.h"
+#include "stereo_lidar_node.h"
 
 //TODO: Add pcl_ros
 
@@ -68,11 +68,12 @@ void StereoLidar::GrabStereoLidar(const sensor_msgs::ImageConstPtr& msgLeft,cons
 
     // Main algorithm runs here
     //Controllo se i punti sono nel giusto timestamp altrimenti mando una lista vuota
-    if(std::abs(lidarPoints.header.stamp - msgLeft.header.stamp) < timeFrameLidarSync){
-        Sophus::SE3f Tcw = mpSLAM->TrackLidarStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec(), lidarPoints.points);
+    Sophus::SE3f Tcw;
+    if(std::abs( ((long) lidarPoints->header.stamp.toNSec()) - ((long) msgLeft->header.stamp.toNSec())) < timeFrameLidarSync){
+        Tcw = mpSLAM->TrackLidarStereo(cv_ptrLeft->image, cv_ptrRight->image, lidarPoints->lidarDepth, cv_ptrLeft->header.stamp.toSec());
     } else {
-        std::unordered_map<std::pair<int, int>, float> empty;
-        Sophus::SE3f Tcw = mpSLAM->TrackLidarStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec(), empty);
+        std::unordered_map<int, float> empty;
+        Sophus::SE3f Tcw = mpSLAM->TrackLidarStereo(cv_ptrLeft->image,cv_ptrRight->image, empty, cv_ptrLeft->header.stamp.toSec());
     }
     Sophus::SE3f Twc = Tcw.inverse();
 

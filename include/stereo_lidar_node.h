@@ -1,13 +1,15 @@
+#include <unordered_map>
+#include <cstdlib>
+
 #include "common.h"
 #include "json.h"
 
 #include "ImuTypes.h"
 
-#include <unordered_map>
 
 struct LidarPoints{
     std_msgs::Header header;
-    std::unordered_map<std::pair<int, int>, float> lidarDepth;
+    std::unordered_map<int, float> lidarDepth;
 };
 
 class StereoLidar {
@@ -21,7 +23,7 @@ class StereoLidar {
         * @param msgRight right camera
         */
         void GrabStereoLidar(const sensor_msgs::ImageConstPtr& msgLeft, const sensor_msgs::ImageConstPtr& msgRight);
-        void StereoLidar::lidar_callback(); //TODO: Aggiungere i parametri
+        void lidar_callback(); //TODO: Aggiungere i parametri
     
     private:
         Common* common;

@@ -197,7 +197,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     AssignFeaturesToGrid();
 }
 
-Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const std::unordered_map<std::pair<int, int>, float> &ld, const double &timeStamp, ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera, Frame* pPrevF, const IMU::Calib &ImuCalib)
+Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const std::unordered_map<int, float> &ld, const double &timeStamp, ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera, Frame* pPrevF, const IMU::Calib &ImuCalib)
     :mpcpi(NULL), mpORBvocabulary(voc),mpORBextractorLeft(extractorLeft),mpORBextractorRight(extractorRight), mTimeStamp(timeStamp), mK(K.clone()), mK_(Converter::toMatrix3f(K)), mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth),
      mImuCalib(ImuCalib), mpImuPreintegrated(NULL), mpPrevFrame(pPrevF),mpImuPreintegratedFrame(NULL), mpReferenceKF(static_cast<KeyFrame*>(NULL)), mbIsSet(false), mbImuPreintegrated(false),
      mpCamera(pCamera) ,mpCamera2(nullptr), mbHasPose(false), mbHasVelocity(false), lidarDepth(ld)
@@ -1080,7 +1080,7 @@ void Frame::ComputeStereoMatches()
     }
 }
 
-void DepthLidarAdjustment()
+void Frame::DepthLidarAdjustment()
 {
     //if there aren't lidar point return
     if(lidarDepth.empty()){
@@ -1100,29 +1100,35 @@ void DepthLidarAdjustment()
         int bestPixDist = 0;
         float bestDepthErr = 10000;
         float bestDepth = mvDepth[i];
+        float dp, dpErr;
         for(int iX=0; iX<winSize; iX++)
         {
             for(int iY=0; iY<winSize; iY++)
             {   
                 winY = (v - static_cast<int>(std::floor(winSize/2)) + iY);
-                if(winY < 0 || winY > imgHeight)             //Exceed image limit
+                if(winY < 0)             //Exceed image limit
                     continue;
+                else
+                     winY = (unsigned short) winY;
 
                 winX = (u - static_cast<int>(std::floor(winSize/2)) + iX);
-                if(winX < 0 || winX > igWidth)               //Exceed image limit
+                if(winX < 0)               //Exceed image limit
                     continue;
+                else
+                    winX = (unsigned short) winX;
 
-                dp = lidarDepth[std::make_pair(winX, winY)];
+
+                dp = lidarDepth[(((winX << 16) && 0xFFFF0000) | (winY && 0x0000FFFF))];
                 if(dp != NULL)
                 {
-                    dp_err = std::abs(mvDepth[i] - dp);
+                    dpErr = std::abs(mvDepth[i] - dp);
                     //ORB in windows
-                    if(dp_err < depthTh){
+                    if(dpErr < depthTh){
                         //Possible depth estimation
                         int pixDist = static_cast<int>(std::floor(std::sqrt(std::pow(winY - v, 2) + std::pow(winX - u, 2)))); //TODO: find a better solution
                         if(pixDist < bestPixDist){
-                            if(dp_err < bestDepthErr){
-                                bestDepthErr = dp_err;
+                            if(dpErr < bestDepthErr){
+                                bestDepthErr = dpErr;
                                 bestPixDist = pixDist;
                                 bestDepth = dp;
                             }

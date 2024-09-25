@@ -127,7 +127,7 @@ public:
      * The depth map is an hashmap, the key is the position, the value is the depth value respect to left camera frame
      * @return the camera pose (empty if tracking fails).
      */
-    Sophus::SE3f TrackLidarStereo(const cv::Mat &imLeft, const cv::Mat &imRight, std::unordered_map<std::pair<int, int>, float> &lidarDepth, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename);
+    Sophus::SE3f TrackLidarStereo(const cv::Mat &imLeft, const cv::Mat &imRight, std::unordered_map<int, float> &lidarDepth, const double &timestamp, const vector<IMU::Point>& vImuMeas = vector<IMU::Point>(), string filename="");
 
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();

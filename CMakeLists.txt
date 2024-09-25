@@ -110,3 +110,13 @@ add_executable(${PROJECT_NAME}_kitti_node
 target_link_libraries(${PROJECT_NAME}_kitti_node 
 ${LIBS}
 )
+
+# stereo-lidar node
+add_executable (${PROJECT_NAME}_stereo_lidar
+   src/stereo_lidar_node.cc
+   src/common.cc
+)
+target_link_libraries(${PROJECT_NAME}_stereo_lidar
+   ${LIBS}
+)
+#dependences for driverless_msgs to the project
