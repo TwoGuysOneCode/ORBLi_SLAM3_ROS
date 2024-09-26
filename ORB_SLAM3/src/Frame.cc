@@ -1109,7 +1109,7 @@ void Frame::DepthLidarAdjustment()
                 if(winY < 0)             //Exceed image limit
                     continue;
                 else
-                     winY = (unsigned short) winY;
+                    winY = (unsigned short) winY;
 
                 winX = (u - static_cast<int>(std::floor(winSize/2)) + iX);
                 if(winX < 0)               //Exceed image limit

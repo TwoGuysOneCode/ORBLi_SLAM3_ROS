@@ -34,11 +34,73 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void StereoLidar::lidar_callback()//Aggiungere pcl
+void StereoLidar::lidar_callback(const PointCloud2::ConstPtr& cloud_msg)
 {
-    //TODO: prendere i punti del lidar e trasformali in punti nell'immagine con la depth 
-    //salva in locale in un unorder_map<std::pair<int, int>, float> i punti da utilizzare
-    //Crea una struct che contiene la mappa e il timestamp cosi che i frame possano essere sincronizzati
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    //Converti da PointCloud2 ROS a PointCloud PCL
+    pcl::fromROSMsg(*cloud_msg, *cloud);
+
+    // Creiamo un listener per ottenere le trasformazioni tf
+    tf::TransformListener listener;
+    tf::StampedTransform transform;
+
+    // Aspetta che la trasformazione sia disponibile
+    try {
+        //listener.lookupTransform(frame_output, frame_input, ros::Time(0), transform);
+        listener.waitForTransform(frame_output, frame_input, ros::Time(0), ros::Duration(3.0));
+        listener.lookupTransform(frame_output, frame_input, ros::Time(0), transform);
+    } catch (tf::TransformException& ex) {
+        ROS_ERROR("Errore durante l'attesa della trasformazione: %s", ex.what());
+        return;
+    }
+
+    tf::Transform inverseTransform = transform.inverse();
+
+    // Creazione di una point cloud per i dati trasformati
+    pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+    // Applica la trasformazione da source_frame a target_frame
+    try {
+        pcl_ros::transformPointCloud(*cloud, *transformed_cloud, transform);
+        ROS_INFO("Nuvola di punti trasformata con successo!");
+    } catch (tf::TransformException& ex) {
+        ROS_ERROR("Errore durante la trasformazione della nuvola di punti: %s", ex.what());
+        return;
+    }
+
+    //std::vector<cv::Point3d> image_points;
+    lidarPoints->header = cloud_msg->header;
+    lidarPoints->clear();
+    for (const auto& point : transformed_cloud->points) {
+        if (point.z > 0){
+            cv::Mat pt_3d = (cv::Mat_<double>(4, 1) << point.x, point.y, point.z, 1);
+            cv::Mat pt_2d = K * pt_3d;
+            // Normalizza per ottenere le coordinate (x, y)
+            pt_2d /= pt_2d.at<double>(2);
+            if(pt_2d.at<double>(0) >= 0 && pt_2d.at<double>(0) < camera_width)
+            {
+                if(pt_2d.at<double>(1) >= 0 && pt_2d.at<double>(1) < camera_height){
+                    //image_points.push_back(cv::Point3d(pt_2d.at<double>(0), pt_2d.at<double>(1), abs(point.z)));
+                    lidarPoint->lidarDepth[((cv::Point3d(pt_2d.at<double>(0) << 16) && 0xFFFF0000) | (pt_2d.at<double>(1) && 0x0000FFFF))] = std::abs(point.z);
+                }
+            }
+        }
+    }
+
+    //TODO: Creare il vettore
+    //Se vogliamo visualizzare l'immagine
+    // for (const auto& pt : image_points) {
+    //     //int color = (int)mapValue(pt.z, 0, 30, 255, 100);
+    //     //Devi aggiungere dei controlli per vedere che stia nell'immagine
+    //     cv::Point2d p (pt.x, pt.y);
+    //     cv::Scalar c = getColor(pt.z, minElement.z, maxElement.z);
+    //     //ROS_INFO("color: %f, %f, %f", c[0], c[1], c[2]);
+    //     cv::circle(img1, p, 3, c, -1);
+    // }
+
+    // ROS_INFO("[lidar_to_camera_view]Pub lidar points image");
+    // sensor_msgs::ImagePtr ros_left_image = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img1).toImageMsg();
+    // left_camera_lidar_point.publish(ros_left_image);
 }
 
 void StereoLidar::GrabStereoLidar(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight)
