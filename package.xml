@@ -18,7 +18,9 @@
     <build_depend>sensor_msgs</build_depend>
     <build_depend>message_generation</build_depend>
     <build_depend>tf2</build_depend>
-    <build_depend>driverless_msgs</build_depend>
+    <build_depend>pcl_ros</build_depend>
+    <build_depend>pcl_ros</build_depend>
+    <run_depend>driverless_msgs</run_depend>
     <run_depend>driverless_msgs</run_depend>
     <run_depend>tf2</run_depend>
     <run_depend>roscpp</run_depend>

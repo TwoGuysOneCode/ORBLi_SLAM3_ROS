@@ -32,7 +32,7 @@ class StereoLidar {
         * @param msgRight right camera
         */
         void GrabStereoLidar(const sensor_msgs::ImageConstPtr& msgLeft, const sensor_msgs::ImageConstPtr& msgRight);
-        void lidar_callback(); //TODO: Aggiungere i parametri
+        void lidar_callback(const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
     
     private:
         Common* common;

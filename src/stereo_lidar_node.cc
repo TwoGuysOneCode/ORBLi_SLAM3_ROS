@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void StereoLidar::lidar_callback(const PointCloud2::ConstPtr& cloud_msg)
+void StereoLidar::lidar_callback(const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
 {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     //Converti da PointCloud2 ROS a PointCloud PCL
@@ -70,7 +70,7 @@ void StereoLidar::lidar_callback(const PointCloud2::ConstPtr& cloud_msg)
 
     //std::vector<cv::Point3d> image_points;
     lidarPoints->header = cloud_msg->header;
-    lidarPoints->clear();
+    lidarPoints->lidarDepth.clear();
     for (const auto& point : transformed_cloud->points) {
         if (point.z > 0){
             cv::Mat pt_3d = (cv::Mat_<double>(4, 1) << point.x, point.y, point.z, 1);
@@ -81,7 +81,7 @@ void StereoLidar::lidar_callback(const PointCloud2::ConstPtr& cloud_msg)
             {
                 if(pt_2d.at<double>(1) >= 0 && pt_2d.at<double>(1) < camera_height){
                     //image_points.push_back(cv::Point3d(pt_2d.at<double>(0), pt_2d.at<double>(1), abs(point.z)));
-                    lidarPoint->lidarDepth[((cv::Point3d(pt_2d.at<double>(0) << 16) && 0xFFFF0000) | (pt_2d.at<double>(1) && 0x0000FFFF))] = std::abs(point.z);
+                    lidarPoints->lidarDepth[((((unsigned int) pt_2d.at<double>(0)) << 16) && 0xFFFF0000) | (((unsigned int) pt_2d.at<double>(1)) && 0x0000FFFF)] = std::abs(point.z);
                 }
             }
         }
