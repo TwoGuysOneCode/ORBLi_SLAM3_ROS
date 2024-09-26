@@ -1,0 +1,37 @@
+<launch>
+    <arg name="camera_name" default="/zed2i/zed_node/" />
+    <arg name="image_left_topic" default="left_raw/image_raw_color" />
+    <arg name="image_right_topic" default="left_raw/image_raw_color" />
+    <arg name="camera_frame_name" default="zed2i_left_camera_optical_frame"/>
+    <arg name="lidar_frame_name" default="velodyne"/>
+    <arg name="lidar_cloud_name" default="velodyne_points"/>
+
+    <node name="orb_slam3_stereolidar" pkg="orb_slam3_ros" type="orb_slam3_ros_stereolidar" output="screen">
+
+        <!-- for EuRoC dataset -->
+        <remap from="/camera/left/image_raw"    to="$(arg camera_name)/$(arg image_left_topic)"/>
+        <remap from="/camera/right/image_raw"   to="$(arg camera_name)/$(arg image_right_topic)"/>
+
+        <!-- Parameters for original ORB-SLAM3 -->
+        <param name="voc_file"      type="string"   value="$(find orb_slam3_ros)/ORB_SLAM3/Vocabulary/ORBvoc.txt" />
+        <param name="settings_file" type="string"   value="$(find orb_slam3_ros)/config/zed2i.yaml" />
+    
+        <!-- Parameters for ROS -->
+        <param name="world_frame_id"    type="string"   value="map" />
+        <param name="cam_frame_id"      type="string"   value="zed2i_left_camera_frame" />
+        <param name="target_frame_id"   type="string"   value="zed2i_left_camera_frame"/>
+        <param name="parent_frame_id"   type="string"   value="base_link"/>
+        <param name="enable_pangolin" type="bool" value="false"/>
+        <param name="enable_cone_detection" type="bool" value="false"/>
+
+        <!--Lidar parameter-->
+        <param name="frame_input_lidar" value="$(arg lidar_frame_name)"/>
+        <param name="frame_output_lidar" value="$(arg camera_frame_name)"/>
+        <remap from="points" to="$(arg lidar_cloud_name)"/>
+
+
+        <!-- Tranf from lidar to camera TODO: Da cambiare la trasformata-->
+        <node pkg="tf" type="static_transform_publisher" name="sensor2_rot_tf" args="0 0 0 -1.57079632679 0 -1.57079632679 rotated_$(arg camera_frame_name) $(arg camera_frame_name) 100" />
+        <node pkg="tf" type="static_transform_publisher" name="velo2cam_tf" args="0 0 0 0 0 0 rotated_$(arg camera_frame_name) $(arg lidar_frame_name) 100" />
+    </node>
+</launch>
