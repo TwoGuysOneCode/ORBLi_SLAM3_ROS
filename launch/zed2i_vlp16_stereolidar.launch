@@ -6,7 +6,7 @@
     <arg name="lidar_frame_name" default="velodyne"/>
     <arg name="lidar_cloud_name" default="velodyne_points"/>
 
-    <node name="orb_slam3_stereolidar" pkg="orb_slam3_ros" type="orb_slam3_ros_stereolidar" output="screen">
+    <node name="orb_slam3_stereo_lidar" pkg="orb_slam3_ros" type="orb_slam3_ros_stereo_lidar" output="screen">
 
         <!-- for EuRoC dataset -->
         <remap from="/camera/left/image_raw"    to="$(arg camera_name)/$(arg image_left_topic)"/>
